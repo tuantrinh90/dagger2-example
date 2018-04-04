@@ -19,6 +19,9 @@ local.properties
 proguard/
 proguard-project.txt
 
+/.gitignore/misc.xml
+/.gitignore/modules.xml
+
 # Android Studio
 *.iml
 *.ipr
