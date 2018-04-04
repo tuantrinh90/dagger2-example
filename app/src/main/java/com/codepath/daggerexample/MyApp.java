@@ -19,11 +19,9 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
 
-        // specify the full namespace of the component
-        // Dagger_xxxx (where xxxx = component name)
         mNetComponent = DaggerNetComponent.builder()
                 .appModule(new AppModule(this))
-                .netModule(new NetModule("https://api.github.com"))
+                .netModule(new NetModule("http://api.themoviedb.org/3/"))
                 .build();
 
         mGitHubComponent = DaggerGitHubComponent.builder()

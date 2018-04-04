@@ -1,20 +1,23 @@
 package com.codepath.daggerexample;
 
-import com.codepath.daggerexample.models.Repository;
+import com.codepath.daggerexample.models.Movie;
+import com.codepath.daggerexample.models.MovieRespone;
 import com.codepath.daggerexample.network.interfaces.GitHubApiInterface;
+import com.codepath.daggerexample.utils.SimpleDividerItemDecoration;
 
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.annotation.RequiresApi;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -25,72 +28,56 @@ import retrofit.Retrofit;
 
 public class MainActivity extends AppCompatActivity {
 
-    @Inject
-    SharedPreferences mSharedPreferences;
-
-    @Inject
-    Retrofit mRetrofit;
+    private RecyclerView mRecyclerView;
+    private CustomAdapter mCustomAdapter;
+    private List<Movie> mRepositoryList;
 
     @Inject
     GitHubApiInterface mGitHubApiInterface;
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View view) {
-                    Call<ArrayList<Repository>> call = mGitHubApiInterface.getRepository("codepath");
-
-                    call.enqueue(new Callback<ArrayList<Repository>>() {
-                        @Override
-                        public void onResponse(Response<ArrayList<Repository>> response, Retrofit retrofit) {
-                            if (response.isSuccess()) {
-                                Log.i("DEBUG", response.body().toString());
-                                Snackbar.make(view,"Data retrieved", Snackbar.LENGTH_LONG)
-                                        .setAction("Action",null).show();
-                            } else {
-                                Log.i("ERROR", String.valueOf(response.code()));
-                            }
-
-                        }
-
-                        @Override
-                        public void onFailure(Throwable t) {
-
-                        }
-                    });
-                }
-
-            });
-
+        toolbar.setTitleTextColor(ContextCompat.getColor(getApplicationContext(), R.color.white));
+        getWindow().setStatusBarColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
         ((MyApp) getApplication()).getGitHubComponent().inject(this);
+        initViews();
+    }
+
+    private void initViews() {
+        mRepositoryList = new ArrayList<>();
+        mRecyclerView = findViewById(R.id.recycle);
+        mRecyclerView.setHasFixedSize(true);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.addItemDecoration(new SimpleDividerItemDecoration(this));
+        loadData();
+    }
+
+    private void loadData() {
+        Call<MovieRespone> call = mGitHubApiInterface.getTopRatedMovies("7e8f60e325cd06e164799af1e317d7a7");
+        call.enqueue(new Callback<MovieRespone>() {
+            @Override
+            public void onResponse(Response<MovieRespone> response, Retrofit retrofit) {
+                mRepositoryList.addAll(response.body().getResults());
+                mCustomAdapter = new CustomAdapter(mRepositoryList);
+                mRecyclerView.setAdapter(mCustomAdapter);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+
+            }
+        });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 }
